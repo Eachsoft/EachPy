@@ -8,7 +8,7 @@ This script generates a simple Juce Gui app. The default output path is THIS_FOL
 
 ## How to use ##
 
-Go to the ../Scripts directory and edit the ExamplesConfig.py file to set
+Go to the ../Script directory and edit the ExamplesConfig.py file to set
 the Juce path correctly. Then execute the script with the name of this example.
 
 

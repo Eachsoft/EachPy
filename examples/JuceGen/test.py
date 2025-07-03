@@ -1,3 +1,0 @@
-import JuceGen
-
-print("Hello")
