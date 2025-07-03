@@ -15,13 +15,10 @@ def generate_config(ctx,project,exporter,config,plugin_name):
 
 def generate_exporter(ctx,project,exporter,plugin_name):
   """
-  The exporter object is one of the exporters asypu would find
+  The exporter object is one of the exporters as it would be
   in Projucer, such as Visual Studio 2022, or Mac OSX.
   """
   en = exporter.Name
-
-
-
   # Attributes can be set per exporter type such as
   if en in ["XCODE_MAC","XCODE_IPHONE"]:
     pass
