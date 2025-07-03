@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "EachPy"
+dynamic=["version"]
+
+[project.scripts]
+EachPy = "EachPy.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "EachPy.__version__"}
+
+[tool.setuptools.packages.find]
+where = [".","src"]

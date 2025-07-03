@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Specify the file (e.g., this script itself)
+file_path="$0"
+
+# Get the directory where the file is located
+file_directory=$(dirname "$file_path")
+
+# Define the Python script to run
+B="/test.py"
+python_script="${file_directory}${B}"
+
+# Function to find and execute the first available Python interpreter
+run_python_script() {
+    # Check for Python 3
+    if command -v python3 &> /dev/null; then
+        echo "Using Python 3 to run $python_script"
+        python3 "$python_script" "$@"
+        return
+
+    # Check for Python 2
+    elif command -v python2 &> /dev/null; then
+        echo "Using Python 2 to run $python_script"
+        python2 "$python_script"  "$@"
+        return
+
+    # Fallback to checking 'python' command
+    elif command -v python &> /dev/null; then
+        echo "Using Python (default) to run $python_script"
+        python "$python_script" "$@"
+        return
+    else
+        echo "No Python interpreter found. Please install Python 2 or 3."
+        exit 1
+    fi
+}
+
+# Call the function to execute the script
+run_python_script  "$@"
+
