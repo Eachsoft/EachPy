@@ -9,7 +9,7 @@ A collection of python packages from EachSoft.
 
 ## Packages ##
 
-* [JuceGen](en/JuceGen/README.md)
+* [JuceGen](en/JuceGen/README.md) - A generator of .jucer Projucer projects. Generate projects and then use Projucer to resave them for building with Ide such as Xcode or Visual Studio.
 
 
 ## Installation ##
