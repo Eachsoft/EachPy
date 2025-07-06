@@ -1,5 +1,7 @@
 """
-Utlities to generate classes for Projucer.
+Projucer project generation. Use python to generate .jucer files that can
+then be opened with Projucer and re-saved or re-save the generated projects from
+command line using Projucer cli.
 """
 from collections import OrderedDict
 import uuid
@@ -72,6 +74,12 @@ def split_relative_path(relative_path):
     return path_parts
 
 def is_plain_relative_path(path):
+    """
+    Tests a path to see if it is a relative path but not
+    starting with ../ or / etc... It must return true only if the
+    path starts with something like alpha or numeric characters and other
+    filename characters.
+    """
     # Check if the path is empty
     if not path:
         return False
@@ -94,6 +102,9 @@ class XBaseNode:
   pass
 
 class XAttrBaseNode:
+  """
+  Base class for objects that have attributes, such as JuceProject and ExporterNode.
+  """
   def __init__(self,ctx):
     self.Context = ctx
     self.DefsName = "defines"
@@ -227,6 +238,11 @@ class XAttrBaseNode:
         put_line = True
 
 class FileNode(XBaseNode):
+  """
+  Represents a file that is added to the Projucer project. Files can be references or
+  resources as well as compilable. For example header files and source code files that
+  must not be compiled are references and graphics like png and jpeg are resources.
+  """
   def __init__(self,path,rel_path,node_id,kind,ftype,_compile="0",resource="0"):
     super(FileNode,self).__init__()
     self.name    = os.path.basename(path)
@@ -239,6 +255,9 @@ class FileNode(XBaseNode):
     self.attrs["resource"] = resource
 
   def trace(self,buf):
+    """
+    Writes the FILE element of the file for the output .jucer file.
+    """
     buf.Indent()
     buf.PutIdn("<FILE id=\"" + self.NodeId + "\" name=\""+self.name + "\"")
     for k,v in self.attrs.items():
@@ -268,6 +287,9 @@ def custom_sort_key(obj):
     """
 
 class GroupNode(XBaseNode):
+  """
+  A GroupNode is used to represent groups in the file tree of the Projucer project.
+  """
   def __init__(self,name,node_id,parent):
     super(GroupNode,self).__init__()
     self.name   = name
@@ -317,6 +339,11 @@ class GroupNode(XBaseNode):
       return "/"   
 
 class ConfigNode(XAttrBaseNode):
+  """
+  The ConfigNode class represents one configuration for an exporter.
+  The exporter will normally have two configurations, one for Debug and
+  one for Release. A ConfigNode represents one of those.
+  """
   def __init__(self,exporter,name,is_debug,targetName):
     super(ConfigNode,self).__init__(exporter.Context)
     self.name       = name
@@ -353,6 +380,9 @@ class ConfigNode(XAttrBaseNode):
     #self.attrs["userNotes"] = ""    
 
   def trace(self,buf):
+    """
+    Write the CONFIGURATION element ito the .jucer file.
+    """
     buf.Indent()
     buf.PutIdn("<CONFIGURATION")  
     self.trace_attrs(buf,self.attrs)
@@ -365,7 +395,6 @@ class JuceModule(XBaseNode):
   Represents the MODULE entry for one of the Juce modules
   that will be included in the project.
   """
-
   def __init__(self,node_id,parent,
                relative_path,
                showAllCode="1",
@@ -380,6 +409,9 @@ class JuceModule(XBaseNode):
     self.attrs["useGlobalPath"] = useGlobalPath
 
   def trace(self,buf):
+    """
+    Write out the MODULE element into the .jucer file.
+    """
     buf.Indent()
     buf.PutIdn("<MODULE id=\"" + self.NodeId + "\"")
     buf.Put(" showAllCode=\"" + self.attrs["showAllCode"] + "\"")
@@ -438,9 +470,15 @@ class ExporterNode(XAttrBaseNode):
       self.add_lib(lib)
 
   def add_define(self,name,value=None):
+    """
+    Add a preprocessor macro definition to the extraDefs attribute of the exporter.
+    """
     self.add_attr_to_dict("extraDefs",name,value)
 
   def trace(self,project,buf):
+    """
+    Write the exporter and its configuration details into the .jucer project file.
+    """
     buf.Indent()
     buf.PutIdn("<" + self.name + "")
     self.trace_attrs(buf,self.attrs)
@@ -527,12 +565,13 @@ class JuceProject(XAttrBaseNode):
 
 
   def set_default_attrs(self):
+    """
+    Set the default attributes for the Projucer project.
+    """
     self.attrs["addUsingNamespaceToJuceHeader"] = "0"
     self.attrs["useAppConfig"] = "0"
     self.attrs["jucerFormatVersion"] = "1"
     self.attrs["maxBinaryFileSize"] = 20971520
-
-  
 
   def set_group(self, group):
     group = self.check_group_param(group)
@@ -540,6 +579,10 @@ class JuceProject(XAttrBaseNode):
     return group
 
   def gen_xid(self):
+    """
+    Generates the id for group nodes in the Projucer project. The id value of group nodes
+    is in a different format from all other nodes. Used internally. Do not use. 
+    """
     while True:
       s = generate_juce_style_uuid()
       if not s in self.AllIds:
@@ -548,6 +591,9 @@ class JuceProject(XAttrBaseNode):
     return None    
 
   def gen_node_id(self):
+    """
+    Internal function. Generates the id for various nodes such as the JUCERPROJECT and FILE nodes.
+    """
     while True:
       s = generate_node_id()
       if not s in self.AllIds:
@@ -579,6 +625,9 @@ class JuceProject(XAttrBaseNode):
 
 
   def try_get_group(self,name,parent = None):
+    """
+    Try to find a group with a specified name in the specified parent group node.
+    """
     slen = len(name)
     if slen > 1:
       if name[0] == "/":
@@ -591,6 +640,11 @@ class JuceProject(XAttrBaseNode):
     return None    
 
   def force_get_group(self,name,parent = None):
+    """
+    Take a name representing a group and return the group node. If the
+    group node does not exist create it and all the nodes in the groups
+    path if they do not exist. 
+    """
     slen = len(name)
     if slen > 1:
       if name[0] == "/":
@@ -603,6 +657,10 @@ class JuceProject(XAttrBaseNode):
     return self.DoBuildGroupsFromPath(name,parent)
 
   def DoBuildGroupsFromPath(self,path,parent_group):
+    """
+    Take the path of a group and build the entire path. For example
+    "/A/B/C/D" will create all the groups with nesting for A, B, C and D.
+    """
     sg = self.CurrentGroup
     items = path.split("/")
     ix = 0
@@ -696,6 +754,12 @@ class JuceProject(XAttrBaseNode):
     return group        
 
   def add_file(self,v,group=None,kind="",ftype=""):
+    """
+    Add a file to the current project. The specified filename
+    can contain wildcards to add many files from a path. Normally
+    do not use this function but prefer to use the
+    add_files function instead, even if adding just one file.
+    """
     group = self.CheckPlainRelativePathToGroup(v,group)
     if isinstance(v,FileNode):
       group.Files.append(v)
@@ -751,6 +815,16 @@ class JuceProject(XAttrBaseNode):
     self.add_files(files,path,group,"ref",ftype)
 
   def add_files(self,files,path="",group=None,kind="",ftype=""):
+    """
+    The normal way to add a file/s to a Projucer project. 
+    Parameters:
+      files - Can be a list of files to add, including paths with wildcards, or
+      it can be just one string to add either one file or many using wildcards.
+      path - A base path to join with each of the specified files to add.
+      group - A group in which to add the files. If not specified then the 
+      current group is used.
+      kind - specifies if the file/s are source to compile(src), a mere file reference(ref) or a resource file(res).
+    """
     sg = self.CurrentGroup
     if group == None:
       group = self.CurrentGroup
@@ -768,12 +842,19 @@ class JuceProject(XAttrBaseNode):
     self.CurrentGroup = sg      
 
   def require_juce_module(self,module_name,showAllCode="1",useLocalCopy="0",useGlobalPath="1"):
+    """
+    Adds one juce module into the project.
+    """
     relPath = RelPathX(self.Context.JuceModulesDir,self.JucerProjectDir)
     module = JuceModule(module_name,self,relPath,showAllCode,useLocalCopy,useGlobalPath)  
     self.Modules.append(module)
     return module
 
   def add_default_juce_modules(self):
+    """
+    Add the default Juce modules into the project, taking into account the
+    project type.
+    """
     project_type = self.attrs["projectType"]
     if project_type == "audioplug":
       self.require_juce_module("juce_audio_basics")
@@ -807,9 +888,10 @@ class JuceProject(XAttrBaseNode):
       self.require_juce_module("juce_gui_basics")
       self.require_juce_module("juce_gui_extra")
 
-
-
   def trace(self,buf):
+    """
+    Print out the project and all its child nodes into the output .jucer file.
+    """
     buf.PutLnIdn("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
     buf.PutIdn("<JUCERPROJECT id=\"" + self.NodeId + "\"")
     buf.Put(" name=\"" + self.name + "\"")
@@ -844,19 +926,36 @@ class JuceProject(XAttrBaseNode):
     buf.PutLnIdn("</JUCERPROJECT>")
   
   def add_exporter(self,name):
-    e = ExporterNode(self,name)
-    self.Exporters.append(e)
+    """
+    Add one exporter, for example XCODE_MAC or ANDROIDSTUDIO 
+    """
+    e = self.get_exporter(name)
+    if e == None:
+      e = ExporterNode(self,name)
+      self.Exporters.append(e)
     return e
 
-  def has_exporter(self,name):  
-    if not type(name) is list: name = [name]
+  def get_exporter(self,name):  
+    """
+    Checks if the specified exporter/s has been added to the project and returns it
+    if so.
+    """
+    if not type(name) is list: 
+      name = [name]
     for n in name:
       for e in self.Exporters:
         if e.name == n:
-          return True
-    return False
+          return e
+    return None
+
+  def has_exporter(self,name):  
+    e = self.get_exporter(name)
+    return e != None
 
   def save(self):
+    """
+    Writes the .jucer file to disk.
+    """
     fn = os.path.join(self.JucerProjectDir, self.ProjectName + ".jucer")
     buf = EachPy.Io.FileWriter(fn)
     self.trace(buf)

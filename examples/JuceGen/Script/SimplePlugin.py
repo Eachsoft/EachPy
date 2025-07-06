@@ -2,23 +2,24 @@ import os
 import JuceGen
 import ExamplesConfig
 
-def generate_config(ctx,project,exporter,config,plugin_name):
+def generate_config(ctx,project: JuceGen.JuceProject,exporter: JuceGen.ExporterNode,config,plugin_name):
   if config.IsDebug:
     config.defs["DEBUG"] = "1"  
     config.defs["_DEBUG"] = "1"  
   else:
     config.attrs["optimisation"] = "6"  
 
-  en = exporter.Name
+
+  en = exporter.name
   binary_products_base = "../../../bin/"
-  config.attrs["binaryPath"] = binary_products_base + "Examples/JuceGen/" + project.Name + "/" + en + "/" + config.Name 
+  config.attrs["binaryPath"] = binary_products_base + "Examples/JuceGen/" + project.name + "/" + en + "/" + config.name 
 
 def generate_exporter(ctx,project,exporter,plugin_name):
   """
   The exporter object is one of the exporters as it would be
   in Projucer, such as Visual Studio 2022, or Mac OSX.
   """
-  en = exporter.Name
+  en = exporter.name
   # Attributes can be set per exporter type such as
   if en in ["XCODE_MAC","XCODE_IPHONE"]:
     pass
@@ -71,7 +72,7 @@ def generate_exporter(ctx,project,exporter,plugin_name):
 
   return
 
-def generate_project(project):
+def generate_project(project: JuceGen.JuceProject):
   ctx = project.Context
   print("Making plugin " + project.name)
   plugin_name = ctx["PLUGIN_NAME"]
@@ -136,7 +137,7 @@ def generate_project(project):
 
   return project
 
-def make_plugin(plugin_name):
+def make_plugin(plugin_name: str):
   root_dir = os.path.normpath(os.path.join(os.path.dirname(__file__),"../../../"))
 
   # The path to the output folder where the .projucer files will go

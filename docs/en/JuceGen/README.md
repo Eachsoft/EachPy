@@ -88,5 +88,40 @@ project.defs["A_MACRO"] = "1"
 project.attrs["extraDefs"] = "A_MACRO&#10;A_MACRO_WITH_VALUE=1&#10"
 
 ```
+#### Adding Files ####
+Files are added to the project object of JuceGen. The kind of files
+yu add are normally .cpp and .h files as well as graphics resource such as
+png files, but you can also add reference files which are files that
+are not used in the build or app but are present in the generated projects
+for reference. If you add .mm objective c files
+for mac then Projucer will only use those for exports to Xcode projects.
 
+```python
+# Use the add_files function to add files. The usual type of
+# parameter to pass for the filenames is a list of strings. 
+# The files are added relative to the current value of context["SourceDir"].
+project.add_files(["MyFile.cpp", "MyFile.h"])
+
+# You can specify a base path to use for many files. In this
+# example the files in the list will be located in SomeDir.
+project.add_files(["MyFile.cpp", "MyFile.h"], "/MyProject/SomeDir")
+
+# The group where the files are added can be specified.
+project.add_files(["MyFile.cpp", "MyFile.h"], group="/MyProject/SomeGroup")
+
+# If you do not want to compile the files but just have them
+# in the project for reference then you can specify this with the
+# kind parameter.
+project.add_files(["MyFile.cpp", "MyFile.h"], kind="ref")
+
+# Or call add_file_refs
+project.add_file_refs(["MyFile.cpp", "MyFile.h"])
+
+```
+
+#### Setting Include Paths ####
+TODO!!!
+
+#### Setting Library Paths ####
+TODO!!!
 
