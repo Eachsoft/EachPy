@@ -120,8 +120,21 @@ project.add_file_refs(["MyFile.cpp", "MyFile.h"])
 ```
 
 #### Setting Include Paths ####
-TODO!!!
+Use the add_paths_attr function to set include paths. This function
+will compute relative paths for you.
+```
+  paths=["SomePath/SomeDir","OtherPath/OtherDir","/usr/include/freefont2"]
+  project.add_paths_attr("headerPath",paths,
+                      base_path=ctx["ContribDir"],
+                      relative_to=ctx.BuildsOutputDir)    
+```
 
 #### Setting Library Paths ####
-TODO!!!
+
+The libraryPath attribute of a config can be set like this using the
+add_paths_attr function which allows for the relative path of
+the library to the output Ide project file to be computed.
+```
+  config.add_paths_attr("libraryPath",lib_paths,relative_to=ctx.BuildsOutputDir)    
+```
 
