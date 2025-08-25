@@ -53,6 +53,9 @@ class Project(InstallarNode):
     self["PACKAGE_VERSION"] = "1.0.0"
     self["PACKAGE_VENDOR"] = "John Somebody"
     self["PACKAGE_DESCRIPTION"] = "Installer application"
+    self["PACKAGE_LICENSE"] = None
+    self["PACKAGE_ICON"] =None
+    self["PACKAGE_README"] =None
     self.Context = ctx
 
   
@@ -79,6 +82,21 @@ class Project(InstallarNode):
     hdr.PutLnIdn("set(CPACK_PACKAGE_VENDOR \""+self["PACKAGE_VENDOR"]+"\")")
     hdr.PutLnIdn("set(CPACK_PACKAGE_DESCRIPTION \""+self["PACKAGE_DESCRIPTION"]+"\")")
 
+    icon_file = self["PACKAGE_ICON"]
+    if icon_file != None:
+      hdr.PutLnIdn("set(CPACK_PACKAGE_ICON \""+icon_file+"\")")
+      hdr.PutLnIdn("set(CPACK_RESOURCE_FILE_ICON \""+icon_file+"\")")
+
+    readme_file = self["PACKAGE_README"]
+    if readme_file != None:
+      hdr.PutLnIdn("set(CPACK_RESOURCE_FILE_README \""+readme_file+"\")")
+      
+    license_file = self["PACKAGE_LICENSE"]
+    if license_file != None:
+      hdr.PutLnIdn("set(CPACK_PACKAGE_LICENSES \""+license_file+"\")")
+      hdr.PutLnIdn("set(CPACK_PACKAGE_LICENSE_FILE \""+license_file+"\")")
+      hdr.PutLnIdn("set(CPACK_RESOURCE_FILE_LICENSE \""+license_file+"\")")
+      
     hdr.PutLnIdn("# Specify output file and packaging formats")
     hdr.PutLnIdn("if(APPLE)")
     if True:
@@ -255,7 +273,7 @@ class Context(InstallarNode):
     print("Notarization request submitted. Checking status...")
 
 
-  def make_dmg(self,dmg_file,pkg_file,vol_name):
+  def make_dmg(self,pkg_file,dmg_file,vol_name):
       print("Removing old DMG (if exists)...")
       command = [
         "rm", "-f", dmg_file
