@@ -31,7 +31,7 @@ The project settings affect the entire project and all exporters.
 
 [pluginName](#pluginname)
 
-[pluginDescription](#plugindescription)
+[pluginDesc](#plugindesc)
 
 [pluginManufacturer](#pluginmanufacturer)
 
@@ -183,7 +183,7 @@ Some characteristics of your plugin such as whether it is a synth, produces MIDI
 ### pluginName
 #### Type: String of max length of max 128 characters. ####
 The name of your plugin (keep it short!)
-### pluginDescription
+### pluginDesc
 #### Type: String of max length of max 256 characters. ####
 A short description of your plugin.
 ### pluginManufacturer

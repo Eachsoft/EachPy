@@ -17,12 +17,13 @@ A collection of python packages from EachSoft.
 ### Install from cloned repository ###
 
 Use Git or Github desktop to clone the repository, or just download the source zip.
-If you do not have build and setuptools install them with these commands.
+If you do not have build and setuptools install them with these commands.  
 ```
 python3 -m pip install --upgrade build
 pip3 install --upgrade pip
 pip3 install setuptools
 ```
+
 
 Then in the root of the repository execute 
 ```

@@ -4,6 +4,7 @@ then be opened with Projucer and re-saved or re-save the generated projects from
 command line using Projucer cli.
 """
 from collections import OrderedDict
+import sys
 import uuid
 import string
 import random
@@ -56,6 +57,7 @@ class Project(InstallarNode):
     self["PACKAGE_LICENSE"] = None
     self["PACKAGE_ICON"] =None
     self["PACKAGE_README"] =None
+    self["PACKAGE_INSTALL_SCRIPTS"]=None
     self.Context = ctx
 
   
@@ -63,6 +65,71 @@ class Project(InstallarNode):
     c = Component(name,path,dest,required)
     self.Components.append(c)
     return c
+
+
+  def PutComponents(self,hdr):
+      hdr.PutLnIdn("# Specify installation locations")
+      comps = ""
+      first_comp = ""
+      for c in self.Components:
+        if first_comp == "":
+          first_comp = c["NAME"]
+        if os.path.isfile(c["PATH"]):
+          sk = "FILES"
+          sp = ""
+        else: 
+          sk = "DIRECTORY"    
+          sp = "USE_SOURCE_PERMISSIONS"
+
+        hdr.PutLnIdn("install("+sk+" \"" + c["PATH"] + "\"" 
+                     " DESTINATION \"" + c["DEST"] + "\"" +
+                     " EXCLUDE_FROM_ALL "+sp+" COMPONENT "+c["NAME"]+")")
+        if comps != "": comps += " "              
+        comps += c["NAME"]              
+        is_req = c["REQUIRED"]
+        if is_req: is_req = "TRUE"
+        else: is_req = "FALSE"
+        hdr.PutLnIdn("set(CPACK_COMPONENT_"+c["NAME"]+"_REQUIRED "+is_req+")")
+      hdr.PutLnIdn("set(CPACK_MONOLITHIC_INSTALL OFF)")
+      hdr.PutLnIdn("set(CPACK_COMPONENTS_ALL "+comps+")")
+      return first_comp  
+
+  def PutPreScript(self,hdr,first_comp):
+    install_scripts = self["PACKAGE_INSTALL_SCRIPTS"]
+    if install_scripts != None:
+      #hdr.PutLnIdn("cpack_add_component(pre_script  DISPLAY_NAME \"Pre-installation Script\"  HIDDEN  REQUIRED)")
+      # Define a "hidden" component for your pre-install script.
+      # This component doesn't install files, but serves as a way to attach a script.
+      hdr.PutLnIdn("install(CODE \"message(STATUS \\\"Installing pre_script\\\")\" COMPONENT pre_script)")
+
+      # Set the pre-installation script for the 'pre_script' component.
+      # The component name must be uppercase here.
+      hdr.PutLnIdn("set(CPACK_PREFLIGHT_PRE_SCRIPT \""+install_scripts+"\")")
+
+      # Set the properties for the components
+      hdr.PutLnIdn("set(CPACK_COMPONENT_PRE_SCRIPT_DISPLAY_NAME \"Pre-installation Script\")")
+      hdr.PutLnIdn("set(CPACK_COMPONENT_PRE_SCRIPT_HIDDEN TRUE)")
+      hdr.PutLnIdn("set(CPACK_COMPONENT_PRE_SCRIPT_REQUIRED TRUE)")      
+
+      # Set the pre-installation script for the 'pre_script' component
+      #hdr.PutLnIdn("set(CPACK_PREFLIGHT_PRE_SCRIPT \""+install_scripts+"\")")
+
+      # Tell CPack that the main application component depends on the script component.
+      # This ensures the script's package is installed *before* the main application.
+      hdr.PutLnIdn("set(CPACK_COMPONENT_DEPENDS \""+first_comp+":pre_script\")")
+
+      if False:
+        #hdr.PutLnIdn("set(CPACK_PRE_BUILD_SCRIPTS \""+install_scripts+"\")")
+        hdr.PutLnIdn("install(CODE \"message(STATUS \"Installing pre_script\")\" COMPONENT pre_script)")
+
+        # Set the pre-installation script for the 'pre_script' component
+        hdr.PutLnIdn("set(CPACK_PREFLIGHT_PRE_SCRIPT \""+install_scripts+"\")")
+
+        # The order matters. Set dependencies so the script runs first.
+        # Make the main app component depend on the script component.
+        hdr.PutLnIdn("set_property(INSTALL_COMPONENT "+first_comp+" PROPERTY DEPENDS pre_script)")
+      pass
+
 
   def Generate(self):
     ctx = self.Context
@@ -82,10 +149,17 @@ class Project(InstallarNode):
     hdr.PutLnIdn("set(CPACK_PACKAGE_VENDOR \""+self["PACKAGE_VENDOR"]+"\")")
     hdr.PutLnIdn("set(CPACK_PACKAGE_DESCRIPTION \""+self["PACKAGE_DESCRIPTION"]+"\")")
 
+    resources_dir = self["RESOURCES_DIR"]
+    if resources_dir != None:
+      hdr.PutLnIdn("set(CPACK_PRODUCTBUILD_RESOURCES_DIR \"" + resources_dir + "\")")
+
     icon_file = self["PACKAGE_ICON"]
     if icon_file != None:
       hdr.PutLnIdn("set(CPACK_PACKAGE_ICON \""+icon_file+"\")")
       hdr.PutLnIdn("set(CPACK_RESOURCE_FILE_ICON \""+icon_file+"\")")
+      hdr.PutLnIdn("set(CPACK_PRODUCTBUILD_BACKGROUND \""+icon_file+"\")")
+      hdr.PutLnIdn("set(CPACK_PRODUCTBUILD_BACKGROUND_ALIGNMENT bottomleft)")
+      hdr.PutLnIdn("set(CPACK_PRODUCTBUILD_BACKGROUND_SCALING none)")
 
     readme_file = self["PACKAGE_README"]
     if readme_file != None:
@@ -97,6 +171,7 @@ class Project(InstallarNode):
       hdr.PutLnIdn("set(CPACK_PACKAGE_LICENSE_FILE \""+license_file+"\")")
       hdr.PutLnIdn("set(CPACK_RESOURCE_FILE_LICENSE \""+license_file+"\")")
       
+
     hdr.PutLnIdn("# Specify output file and packaging formats")
     hdr.PutLnIdn("if(APPLE)")
     if True:
@@ -106,22 +181,9 @@ class Project(InstallarNode):
       hdr.PutLnIdn("set(CPACK_DMG_VOLUME_NAME \"${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION}\")")
       hdr.PutLnIdn("set(CPACK_PRODUCTBUILD_IDENTIFIER \""+self["PACKAGE_BUNDLE_ID"]+"\")")
     
-      hdr.PutLnIdn("# Specify installation locations")
-      dest = "\"Applications/Fred\""
-      comps = ""
-      for c in self.Components:
-        hdr.PutLnIdn("install(DIRECTORY \"" + c["PATH"] + "\"" 
-                     " DESTINATION \"" + c["DEST"] + "\"" +
-                     " EXCLUDE_FROM_ALL USE_SOURCE_PERMISSIONS COMPONENT "+c["NAME"]+")")
-        if comps != "": comps += " "              
-        comps += c["NAME"]              
-        is_req = c["REQUIRED"]
-        if is_req: is_req = "TRUE"
-        else: is_req = "FALSE"
-        hdr.PutLnIdn("set(CPACK_COMPONENT_"+c["NAME"]+"_REQUIRED "+is_req+")")
+      first_comp = self.PutComponents(hdr)
+      self.PutPreScript(hdr,first_comp);
 
-      hdr.PutLnIdn("set(CPACK_MONOLITHIC_INSTALL OFF)")
-      hdr.PutLnIdn("set(CPACK_COMPONENTS_ALL "+comps+")")
       #hdr.PutLnIdn("set(CPACK_COMPONENT_ASSETS_REQUIRED TRUE)")
 
       hdr.PutLnIdn("set(CPACK_PACKAGING_INSTALL_PREFIX \"/\")")
@@ -144,9 +206,12 @@ class Project(InstallarNode):
       hdr.PutLnIdn("set(CPACK_GENERATOR \"NSIS;ZIP\")")
     
       hdr.PutLnIdn("# Specify installation locations")
-      hdr.PutLnIdn("install(DIRECTORY bundles/ DESTINATION \"C:/Program Files/MyApp\")")
-      hdr.PutLnIdn("install(DIRECTORY Media/ DESTINATION \"C:/Program Files/MyApp/Media\")")
-      hdr.PutLnIdn("install(DIRECTORY Assets/ DESTINATION \"C:/Program Files/MyApp/Assets\")")
+      first_comp = self.PutComponents(hdr)
+      self.PutPreScript(hdr,first_comp);
+
+      #hdr.PutLnIdn("install(DIRECTORY bundles/ DESTINATION \"C:/Program Files/MyApp\")")
+      #hdr.PutLnIdn("install(DIRECTORY Media/ DESTINATION \"C:/Program Files/MyApp/Media\")")
+      #hdr.PutLnIdn("install(DIRECTORY Assets/ DESTINATION \"C:/Program Files/MyApp/Assets\")")
       hdr.Dedent()
     hdr.PutLnIdn("endif()")
 
@@ -169,20 +234,29 @@ class Project(InstallarNode):
     os.chdir(project_dir)
 
     # Create the build directory with CMake
-    subprocess.run(["cmake", "-B", "build"], check=True)
+    subprocess.run(["cmake", "--trace", "-B", "build"], check=True)
     
     # Change to the build directory
     os.chdir("build")
     
     # Run CPack to create a .pkg file
-    subprocess.run(["cpack", "-G", "productbuild"], check=True)
+    if sys.platform == "darwin": g = "productbuild"
+    else: g = "NSIS"
+
+    subprocess.run(["cpack", "--verbose", "-G", g], check=True)
     
     # Find the .pkg file generated by CPack
     # Assumes only one .pkg file is generated; adjust if necessary
-    pkg_files = [f for f in os.listdir() if f.endswith('.pkg')]
-    if not pkg_files:
-        print("Error: No .pkg file was generated.")
-        return
+    if sys.platform == "darwin":
+      pkg_files = [f for f in os.listdir() if f.endswith('.pkg')]
+      if not pkg_files:
+          print("Error: No .pkg file was generated.")
+          return
+    else:  
+      pkg_files = [f for f in os.listdir() if f.endswith('.exe')]
+      if not pkg_files:
+          print("Error: No .exe file was generated.")
+          return
     result = ""
     # Copy the .pkg file to the specified output directory
     for pkg_file in pkg_files:
@@ -194,9 +268,6 @@ class Project(InstallarNode):
         print(f"Copied {pkg_file} to {output_dir}")
     return result
 
-
-
-
 class Context(InstallarNode):
   def __init__(self):
     super(Context,self).__init__()
@@ -205,13 +276,14 @@ class Context(InstallarNode):
     if not os.path.exists(pkg_path):
         print(f"Error: The specified .pkg file does not exist: {pkg_path}")
         return ""
+    if sys.platform != "darwin":
+      # For windows this is a no-op
+      return pkg_path
+
     if signed_pkg_path == "":    
       base, ext = os.path.splitext(pkg_path)
       base += "_signed"
       signed_pkg_path = base + ext
-
-    if xid == "":
-      xid = self["DEVELOPER_ID_INSTALLER"] 
 
     print("Signing package " + pkg_path)    
     command = [
@@ -239,7 +311,7 @@ class Context(InstallarNode):
     print("Package signature is verified.")    
     return signed_pkg_path    
 
-  def notarize_pkg(self,pkg_path):
+  def notarize_pkg(self,pkg_path,keychain_profile_id):
     """
     Notarize a .pkg file using Apple's notarization service.
     
@@ -255,7 +327,7 @@ class Context(InstallarNode):
     print("Submitting package for notarization...")
     # Submit the .pkg file for notarization
     command = ["xcrun", "notarytool", "submit", pkg_path,
-                   "--keychain-profile", self["KEYCHAIN_PROFILE_ID"],
+                   "--keychain-profile", keychain_profile_id,
                    "--wait" ]
     try:
         subprocess.run(command, check=True)

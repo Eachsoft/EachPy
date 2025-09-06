@@ -21,7 +21,7 @@ Settings affecting the configuration of Xcode projects.
 
 [plistPreprocessorDefinitions](#plistpreprocessordefinitions)
 
-[codeSignIdentity](#codesignidentity)
+[codeSigningIdentity](#codesigningidentity)
 
 [fastMathEnabled](#fastmathenabled)
 
@@ -94,7 +94,7 @@ A comma-separated list of custom Xcode setting flags which will be appended to t
 ### plistPreprocessorDefinitions
 #### Type: String of max length of max 2048 characters. ####
 Preprocessor definitions used during PList preprocessing (see PList Preprocess).
-### codeSignIdentity
+### codeSigningIdentity
 #### Type: String of max length of max 1024 characters. ####
 The name of a code-signing identity for Xcode to apply.
 ### fastMathEnabled
